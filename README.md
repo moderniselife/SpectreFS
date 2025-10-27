@@ -1,7 +1,6 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/moderniselife/spectrefs/main/assets/logo.png" alt="SpectreFS Logo" width="180"/>
+  <img src="./assets/logo-only.png" alt="SpectreFS Logo" width="180"/>
 </p>
-
 <h1 align="center">SpectreFS 👻</h1>
 <p align="center">
   <em>The spirit of <a href="https://github.com/puttyman/streamarrfs">Streamarrfs</a> reborn.</em><br/>

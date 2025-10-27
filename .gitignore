@@ -6,3 +6,4 @@ server/downloads/*
 docker/compose/db/db.sqlite
 server/db/db.sqlite
 server/src/test-feeds.ts
+.DS_Store
