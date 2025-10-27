@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/yourusername/spectrefs/main/assets/logo.png" alt="SpectreFS Logo" width="180"/>
+  <img src="https://raw.githubusercontent.com/moderniselife/spectrefs/main/assets/logo.png" alt="SpectreFS Logo" width="180"/>
 </p>
 
 <h1 align="center">SpectreFS 👻</h1>
