@@ -1,263 +1,216 @@
-# Streamarrfs (experimental)
-
-Streamarrfs allows you to stream movies or tv shows torrents via plex, jellyfin and etc. Powered by ⚡️[webtorrent](https://github.com/webtorrent/webtorrent).
+<p align="center">
+  <img src="https://raw.githubusercontent.com/yourusername/spectrefs/main/assets/logo.png" alt="SpectreFS Logo" width="180"/>
+</p>
 
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/puttyman) if you like this project.
+<h1 align="center">SpectreFS 👻</h1>
+<p align="center">
+  <em>The spirit of <a href="https://github.com/puttyman/streamarrfs">Streamarrfs</a> reborn.</em><br/>
+  Stream torrents directly through Plex, Jellyfin, or any media server — as if the files already existed.<br/>
+  Powered by ⚡️ <a href="https://github.com/webtorrent/webtorrent">WebTorrent</a>.
+</p>
 
-## How does it work?
-  1. Streamarrfs finds torrents from your favorite torrent indexer. e.g. [Jackett](https://github.com/Jackett/Jackett)
-  2. Stores info about torrents and including files in its internal database (sqlite3).
-  3. Mount and creates a virtual directory through [fuse](https://github.com/libfuse/libfuse) to simulate as if the files in the torrents are present locally.
-  4. Whenever a read if requested to a file, Streamarrfs starts the torrent and stream through the portion of the file requested.
-  5. Automatically stop torrents that has no read activity after certain period.
+<p align="center">
+  <a href="https://github.com/moderniselife/SpectreFS/releases"><img src="https://img.shields.io/github/v/release/moderniselife/SpectreFS?style=flat-square&logo=github" /></a>
+  <a href="https://hub.docker.com/r/moderniselife/spectrefs"><img src="https://img.shields.io/docker/pulls/moderniselife/spectrefs?style=flat-square&logo=docker" /></a>
+</p>
 
-## Features
-- Monitors torrents that are not being streamed and stop them.
-- Automatically paused followed to a stop of torrents if no read activity detected.
-- Polls feed(s) on desired frequency.
-- Ability to seek through video while streaming.
-- File system can be mounted for other usage e.g. nginx as a file server.
-- Handles torrent duplicates from multiple feeds.
+---
 
-### Supported Indexes
-  - [Jackett](https://github.com/Jackett/Jackett)
+## 🪄 What is SpectreFS?
 
-### Caveats
-  - When Plex or Jellyfin scans your media library it will cause torrents to start. Streamarrfs get around this problem by having a max number of streaming or running torrents see `STREAMARRFS_TORRENT_MAX_READY`. However, the limit might cause a new stream to result in an [error](https://github.com/puttyman/streamarrfs?tab=readme-ov-file#occassional-plex-errors) if the max running torrents has been reached. You can get around this problem by manually stopping the torrent via the [web gui](https://github.com/puttyman/streamarrfs?tab=readme-ov-file#is-there-a-web-gui) at `http://{HOST}:3000/` or simply wait for it to be automatically stopped due to no read activity.
+SpectreFS is a **torrent streaming filesystem** — a spectral layer between your torrent indexers and your media server.  
+It **mounts torrents as real files** using [FUSE](https://github.com/libfuse/libfuse), allowing Plex or Jellyfin to play videos instantly without downloading them first.
 
-## Setup instructions
+Born from the original [Streamarrfs](https://github.com/puttyman/streamarrfs) (which went quiet over a year ago), SpectreFS carries forward its spirit — rewritten, modernized, and actively maintained.
 
-At the present this project only supports running as a docker image and on a x86_64 architecture. PRs are welcomed for any features and bug fixes. Given this project is at an experimental stage it is recommended to use a seperate plex server instance.
+---
 
-### Dependencies & Prerequisites
-  - Fuse v2 (host).
+## 🧠 How It Works
 
-    ```bash
-    # On Ubuntu 22.04 LTS you may install this with the commands below.
-    apt update
-    apt apt install fuse libfuse2 libfuse-dev -y
-    ```
-  - Docker & Docker compose v2 (host).
+1. **Watches Plex Watch List** to find new torrents
+2. **Finds torrents** via your favorite indexer (e.g. [Jackett](https://github.com/Jackett/Jackett)).  
+3. **Indexes and caches** torrent metadata into SQLite.  
+4. **Mounts** a virtual directory through FUSE, simulating the files locally.  
+5. **Streams only what’s needed** — SpectreFS launches the torrent and reads the requested portion on demand.  
+6. **Auto-cleans** inactive torrents, keeping your system lean and uncluttered.
 
-    ```bash
-    # On Ubuntu 22.04 LTS you may install this with the commands below.
-    apt update
-    apt install docker.io
-    # Install docker compose v2
-    # See: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04
-    # Confirm you have docker and compose v2.x.x
-    # Note make sure you have at least docker-compose 2.24
-    docker info
-    docker compose version
-    ```
-  - Root access. Running the image as a user should be possible with a few tweaks.
-  - Hardware. Recommended minimum of 8gb RAM due to a [webtorrent issue](https://github.com/webtorrent/webtorrent/issues/1973).
+---
 
-### Common steps for Plex & Jellyfin (Tested on Ubuntu 22.04 LTS)
+## ✨ Features
 
-  1. Make sure your host has the fuse at `/dev/fuse`.
+- Stream torrents directly via **Plex**, **Jellyfin**, or even **Nginx**.
+- Smart torrent lifecycle: **pause → stop → cleanup** based on activity.  
+- **Seek** through videos mid-stream.  
+- **Feed polling** at customizable intervals.  
+- Handles **duplicates** across multiple feeds.  
+- Minimal resource usage — no long-term storage needed.  
 
-    ls /dev/fuse
+---
 
-  2. SSH as root with command:
-  
-    sudo su
+## 🧩 Supported Indexers
+- [Jackett](https://github.com/Jackett/Jackett) (more coming soon)
 
-  4. Create a directory where Streamarrfs will mount the torrents' files.
-  
-    mkdir /tmp/streamarrfs-tmp
-  
-  5. Create & change to directory for the docker compose file.
-  
-    mkdir /opt/streamarrfs && cd /opt/streamarrfs
-  
-  6. Create the docker-compose.yml file from the examples. 
-    
-  ```bash
-  curl https://raw.githubusercontent.com/puttyman/streamarrfs/master/examples/plex/docker-compose.yml > docker-compose.yml
-  ```
+---
 
-  7. Start the docker compose stack in the background.
+## ⚠️ Caveats
 
-  ```bash
-  docker compose up -d
-  ```
-  8. Streamarrfs should now have the files of torrents mounted under **/tmp/streamarrfs-tmp/streamarrfs-mnt/**. You may now access the files directly on your host or mount it to another docker container e.g. Plex or Jellyfin. If you are unsure how to do so continue to [Adding the streamarrfs files as a media libray](https://github.com/puttyman/streamarrfs?tab=readme-ov-file#adding-the-streamarrfs-files-as-a-media-libray).
+Media scanners like Plex and Jellyfin may auto-start torrents during library indexing.  
+SpectreFS mitigates this with a configurable torrent concurrency limit (`SPECTREFS_TORRENT_MAX_READY`).  
+If you hit the cap, new streams will pause until others stop. You can manage this via the built-in [Web GUI](http://{HOST}:3000/web).
 
-### Adding the streamarrfs files as a media libray
+---
 
-#### Plex
+## 🐋 Quick Start (Docker)
 
-The instructions below is based on the [example](https://raw.githubusercontent.com/puttyman/streamarrfs/master/examples/plex/docker-compose.yml).
+### Prerequisites
+- **FUSE v2**
+- **Docker + Compose v2**
+- **x86_64 host**
+- Minimum **8 GB RAM** (due to [WebTorrent issue #1973](https://github.com/webtorrent/webtorrent/issues/1973))
 
-  1. On a browser go to your plex instance web ui. Based example on the docker file plex should be listening on the IP of your host machine.
-
-  ```bash
-  open http://{YOUR_HOST_IP}:32400/web
-  ```
-
-  2. Follow the [Official Plex Basic Setup Wizard](https://support.plex.tv/articles/200288896-basic-setup-wizard/)
-
-  3. At **Step 10.** add the folder **/streamarrfs** as the media library.
-
-  4. Optional for optimal experience. In the **Advanced** section. **Disable** the following options:
-
-      4.1 Prefer artwork based on library language
-      
-      4.2 Disable Include related external content
-
-      4.3 Use local assets
-
-      4.4 Enable video preview thumbnails
-  5. Save your media library and you may now test plex with the sample free torrents
-  6. To add a Jackett feed. See [Adding Jackett indexers to Streamarrfs](https://github.com/puttyman/streamarrfs?tab=readme-ov-file#adding-jackett-indexers-to-streamarrfs)
-
-#### Jellyfin (TODO)
-
-The instructions below is based on the [example](https://raw.githubusercontent.com/puttyman/streamarrfs/master/examples/plex/docker-compose.yml).
-
-### Adding Jackett indexers to Streamarrfs
-
-  1. Create your desired Jackett indexer. The [example](https://raw.githubusercontent.com/puttyman/streamarrfs/master/examples/plex/docker-compose.yml) should have an instance of Jackett running at `http://{YOUR_HOST_IP}:9117`. If you are unsure how to do so follow this [guide](https://www.rapidseedbox.com/blog/guide-to-jackett).
-  
-  2. Copy the RSS link of your indexer from your Jackett web portal.
-  3. In the [docker-compose.yaml](https://raw.githubusercontent.com/puttyman/streamarrfs/master/examples/plex/docker-compose.yml) file add a new environment variable named `STREAMARRFS_JACKETT_FEED_URL_ITEM_{NAME}`. Replace `{NAME}` with any name so you can uniquely identify your indexer. The value of the variable should be the RSS link of your indexer from Jackett. You may add any extra query params to fine tune your results from Jackett. Example below.
-
-  ```yml
-      environment:
-        - NODE_ENV=production
-        - STREAMARRFS_JACKETT_FEED_URL_ITEM_YTS=http://HOST:9117/api/v2.0/indexers/yts/results/torznab/api?apikey=key&t=search&cat=&q=
-  ```
-  4. Restart your docker stack. `docker compose restart`.
-  5. Enjoy.
-
-## Container environment variables
-
-Note: some variables are undocumented.
-
-| Variable | Description |
-| --- | ----------- |
-| STREAMARRFS_JACKETT_FEED_URL_PREFIX | The prefix of the environment variable to look for jackett feed URLs. Default = `STREAMARRFS_JACKETT_FEED_URL_ITEM` |
-| STREAMARRFS_JACKETT_FEED_URL_ITEM_* | The prefix for a jackett feed URL |
-| STREAMARRFS_LOG_LEVEL | Can be a list seperated by comma for multiple log level. e.g. debug,error,fatal,log,warn,verbose . Default for production error,log |
-| STREAMARRFS_ADD_FREE_TORRENTS | Add some free torrents on startup. Default = true |
-| STREAMARRFS_TORRENT_PAUSE_AFTER_MS | The time to wait when no read activity is detected to pause a torrent. |
-| STREAMARRFS_TORRENT_STOP_AFTER_MS | The time to wait when no read activity is detected to stop a torrent. |
-| STREAMARRFS_TORRENT_MAX_READY | The maximum number of torrents allowed to be streaming at any given time. Default = 1. |
-| STREAMARRFS_TORRENT_START_TIMEOUT | The timeout for a torrent to be in a readable state. Default = 2mins. |
-| STREAMARRFS_TORRENT_INDEXER_CONCURRENCY | The number of concurrent torrents which can be indexed at any given time. Default = 1. |
-| STREAMARRFS_WEBTORRENT_MAX_CONNS | The max connections per torrent. Default = 1. |
-
-## Development
-
-### Linux/WSL (Ubuntu 22.04 LTS) dependencies
-  1. Install libfuse
-
-    apt update
-    apt install fuse libfuse2 libfuse-dev -y
-
-### OSX
-  1. Install osxfuse
-
-    brew install --cask osxfuse
-  
-  2. Alternatively install the .dmg from their [github releases](https://github.com/osxfuse/osxfuse/releases).
-
-### Getting started
-
-  1. From project root `cd server && npm i`
-  2. Init database `npm run build`
-  3. Init database `npm run migration:run`
-  4. Run dev `npm run start:dev`
-
-### Database changes & migrations
-
-  1. Make changes to your entities .ts files.
-  2. Generate a migration `npm run migration:generate db/migrations/db-change`.
-
-
-
-## FAQs
-
-#### Is there a web GUI?
-
-There is a simple web gui available at http://{YOUR_SERVER_IP}:3000/web. This GUI should allow you to view stats of streaming and indexing torrent.
-
-The UI also allow you stop them in case you do not wish to wait for the automatic cleanup.
-
-#### Why stream when I can download?
-
-- Quickly finds content of your liking before needing a download.
-- No storage required. (only cached during streaming).
-- Skim through multiple videos to check content.
-
-## Occassional Plex errors
-
-### Errors
-  - Playback error.
-  - Content Unavailable.
-  - An error occurred trying to play "...". Error code: s1001 (Network)
-
-#### You are likely to get this error if:
-- Your connection is not fast enough.
-- Your server is not fast enough.
-- The torrent does not have enough peers.
-- The torrent has timed-out to be in readable state.
-- Plex is currently indexing the library and may cause torrents to start.
-- Your server does not have enough RAM. Your allocated RAM should be more than the size of the video being streamed. See [webtorrent issue](https://github.com/webtorrent/webtorrent/issues/1973)
-- The video your are trying to stream have multiple versions. e.g. movie.1080p.mp4 movie.2160p.mp4.
-
-#### Solutions & Workarounds
- - Simply retry playing the video until it works.
- - Use a feed source that returns movies with 100+ Seeds. e.g. YTS
- - Check CPU usage and see if your server is powerful enough.
- - Plex indexing - wait for 1-2mins streamarrfs will stop the torrent after no activity.
- - Lower the frequency that torrents are added from feeds.
-
-#### ERROR - Please check that the file exists and the necessary drive is mounted.
-
-Plex will not see the files from streamarrfs if it has been restarted. 
-Plex should always be started after streamarrfs has successfully been mounted. Restarting plex should fix the issue.
-
-See [example](examples/plex/docker-compose.yml) to start plex as a docker image and depends on streamarrfs.
-
-
-## Troubleshooting
-
-### Common issues
-
-- When you force remove the container, you have to sudo fusermount -uz /host/mount/point on the hostsystem!
+### Example setup
 
 ```bash
-rm: cannot remove '/tmp/streamarrfs: Device or resource busy
-user@server: sudo fusermount -uz /tmp/streamarrfs
-user@server: rm -rf /tmp/streamarrfs
+# 1. Install dependencies
+sudo apt update
+sudo apt install fuse libfuse2 libfuse-dev docker.io -y
+
+# 2. Confirm FUSE is installed
+ls /dev/fuse
+
+# 3. Enter root
+sudo su
+
+# 4. Prepare mount directory
+mkdir -p /tmp/spectrefs-tmp
+
+# 5. Create a Docker Compose folder
+mkdir -p /opt/spectrefs && cd /opt/spectrefs
+
+# 6. Download example compose file
+curl -O https://raw.githubusercontent.com/yourusername/spectrefs/main/examples/plex/docker-compose.yml
+
+# 7. Start SpectreFS
+docker compose up -d
+
 ```
 
-- For running outside of docker.
+### 🗂️ Adding the SpectreFS Mount as a Media Library
 
-```
-npm ERR! Package fuse was not found in the pkg-config search path.
-npm ERR! Perhaps you should add the directory containing `fuse.pc'
-npm ERR! to the PKG_CONFIG_PATH environment variable
-npm ERR! No package 'fuse' found
-npm ERR! Package fuse was not found in the pkg-config search path.
-npm ERR! Perhaps you should add the directory containing `fuse.pc'
-npm ERR! to the PKG_CONFIG_PATH environment variable
-npm ERR! No package 'fuse' found
-npm ERR! gyp: Call to 'pkg-config --libs-only-L --libs-only-l fuse' returned exit status 1 while in binding.gyp. while trying to load binding.gyp
-npm ERR! gyp ERR! configure error
-```
+#### ⚙️ Plex Setup
 
-You need to have libfuse-dev prior to `npm install` as @cocalc/fuse-native does not ship with libfuse.
+The following guide is based on the [Plex Docker Compose example](https://raw.githubusercontent.com/yourusername/spectrefs/main/examples/plex/docker-compose.yml).
 
-```
-sudo apt-get install -y libfuse-dev
-```
+1. **Open your Plex Web UI**
 
-#### Mounted directory is empty
+   Based on the Docker setup, Plex should be accessible at:
+   ```bash
+   open http://{YOUR_HOST_IP}:32400/web
+   ```
 
-Add this flag if you want to allow other users to access this fuse mountpoint.
-You need to add user_allow_other flag to /etc/fuse.conf file.
- 
-```user_allow_other```
+2. **Run through the [Plex Basic Setup Wizard](https://support.plex.tv/articles/200288896-basic-setup-wizard/)**  
+   If Plex is freshly installed, complete the wizard until the media library setup step.
+
+3. **Add the SpectreFS Mount**
+
+   When prompted to add a media library:
+   - Choose the appropriate library type (Movies, TV Shows, etc.)
+   - Add this folder path:
+     ```
+     /spectrefs
+     ```
+     This is where SpectreFS mounts your active torrent streams.
+
+4. **Optimize Plex Scanning (Recommended)**
+
+   To prevent Plex from unnecessarily starting multiple torrents during library indexing, disable the following advanced options:
+   - “Prefer artwork based on library language”
+   - “Include related external content”
+   - “Use local assets”
+   - “Generate video preview thumbnails”
+
+   These options cause excessive reads, which can trigger torrents to start and occupy your concurrency limit.
+
+5. **Save and Test**
+
+   Once saved, Plex will automatically detect files within `/spectrefs`.  
+   You can test playback using the free sample torrents included in SpectreFS.
+
+6. **Next Step: Add Indexers**  
+   Continue below to [Adding Jackett Indexers](#-adding-jackett-indexers).
+
+---
+
+#### 💠 Jellyfin Setup
+
+Coming soon — but the process mirrors Plex closely.  
+Simply point Jellyfin’s media library to your SpectreFS mount directory (e.g. `/spectrefs`) and ensure the Docker container has access to that path.
+
+A Jellyfin example configuration will be available in the next release.
+
+---
+
+### 🧭 Adding Jackett Indexers
+
+1. **Set up Jackett**
+
+   Run your Jackett instance (example):
+   ```
+   http://{YOUR_HOST_IP}:9117
+   ```
+   If you’re new to Jackett, follow this guide:  
+   👉 [How to Set Up Jackett](https://www.rapidseedbox.com/blog/guide-to-jackett)
+
+2. **Copy the RSS Feed URL**
+
+   From your Jackett web interface, locate and copy the RSS link for your chosen indexer (e.g. YTS, 1337x, etc.).
+
+3. **Add the Feed to SpectreFS**
+
+   In your `docker-compose.yml`, add the feed URL under the environment section:
+
+   ```yaml
+   environment:
+     - NODE_ENV=production
+     - SPECTREFS_JACKETT_FEED_URL_ITEM_YTS=http://HOST:9117/api/v2.0/indexers/yts/results/torznab/api?apikey=KEY&t=search&cat=&q=
+   ```
+
+   Replace:
+   - `YTS` with a unique name for this feed.
+   - `KEY` with your Jackett API key.
+
+   You can also append query parameters to fine-tune results.
+
+4. **Restart SpectreFS**
+
+   ```bash
+   docker compose restart
+   ```
+
+5. **Enjoy**
+
+   SpectreFS will now automatically poll your feeds, index the latest torrents, and make them instantly available through your virtual mount.
+
+---
+
+### ⚙️ Environment Variables
+
+> Some variables are experimental and may not yet be fully documented.
+
+| Variable | Description |
+| --- | --- |
+| `SPECTREFS_JACKETT_FEED_URL_PREFIX` | The prefix used to discover Jackett feed URLs. Default: `SPECTREFS_JACKETT_FEED_URL_ITEM` |
+| `SPECTREFS_JACKETT_FEED_URL_ITEM_*` | Individual feed URLs (replace `*` with any unique identifier) |
+| `SPECTREFS_LOG_LEVEL` | Comma-separated log levels: `debug,error,log,warn,verbose`. Default: `error,log` |
+| `SPECTREFS_ADD_FREE_TORRENTS` | Adds free sample torrents on startup. Default: `true` |
+| `SPECTREFS_TORRENT_PAUSE_AFTER_MS` | Time (ms) of inactivity before pausing a torrent. |
+| `SPECTREFS_TORRENT_STOP_AFTER_MS` | Time (ms) before a paused torrent is stopped. |
+| `SPECTREFS_TORRENT_MAX_READY` | Maximum number of torrents allowed to stream simultaneously. Default: `1` |
+| `SPECTREFS_TORRENT_START_TIMEOUT` | Timeout for torrent readiness. Default: `2m` |
+| `SPECTREFS_TORRENT_INDEXER_CONCURRENCY` | Maximum concurrent torrents being indexed. Default: `1` |
+| `SPECTREFS_WEBTORRENT_MAX_CONNS` | Maximum peer connections per torrent. Default: `1` |
+
+---
+
+SpectreFS seamlessly turns your torrent feeds into a living, mountable library —  
+files that don’t exist until you look at them. 👻
