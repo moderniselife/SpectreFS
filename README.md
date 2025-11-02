@@ -12,6 +12,7 @@
   <a href="https://github.com/moderniselife/SpectreFS/releases"><img src="https://img.shields.io/github/v/release/moderniselife/SpectreFS?style=flat-square&logo=github" /></a>
   <a href="https://hub.docker.com/r/moderniselife/spectrefs"><img src="https://img.shields.io/docker/pulls/moderniselife/spectrefs?style=flat-square&logo=docker" /></a>
 </p>
+<p align="center">Please note, this codebase will be under going significant rewrite.</p>
 
 ---
 
